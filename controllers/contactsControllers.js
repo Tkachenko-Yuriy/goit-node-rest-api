@@ -68,7 +68,9 @@ export const updateContact = [
       const updatedData = req.body;
 
       if (Object.keys(updatedData).length === 0) {
-        throw new HttpError(400, "Body must have at least one field");
+        return res
+        .status(400)
+        .json({ message: "Body must have at least one field" });
       }
 
       const updatedContact = await contactsService.updateContact(
