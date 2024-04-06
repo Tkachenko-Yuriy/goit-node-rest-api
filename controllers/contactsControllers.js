@@ -2,13 +2,14 @@ import contactsService from "../services/contactsServices.js";
 import {
   createContactSchema,
   updateContactSchema,
+  updateStatusContactSchema,
 } from "../schemas/contactsSchemas.js";
 import validateBody from "../helpers/validateBody.js";
 import HttpError from "../helpers/HttpError.js";
 
-export const getAllContacts = async (req, res) => {
+export const getAllContacts = async (req, res, next) => {
   try {
-    const contactsList = await contactsService.listContacts();
+    const contactsList = await contactsService.getAllContacts();
     res.status(200).json(contactsList);
   } catch (error) {
     next(error);
@@ -19,11 +20,10 @@ export const getOneContact = async (req, res) => {
   try {
     const contactId = req.params.id;
     const contact = await contactsService.getContactById(contactId);
-    if (contact) {
-      res.status(200).json(contact);
-    } else {
-      res.status(404).json({ message: "Not found" });
+    if (!contact) {
+      throw HttpError(404);
     }
+    res.status(200).json(contact);
   } catch (error) {
     next(error);
   }
@@ -33,11 +33,10 @@ export const deleteContact = async (req, res) => {
   try {
     const contactId = req.params.id;
     const deletedContact = await contactsService.removeContact(contactId);
-    if (deletedContact) {
-      res.status(200).json(deletedContact);
-    } else {
-      res.status(404).json({ message: "Not found" });
+    if (!deletedContact) {
+      throw HttpError(404);
     }
+    res.status(200).json(deletedContact);
   } catch (error) {
     next(error);
   }
@@ -48,7 +47,7 @@ export const createContact = [
   async (req, res) => {
     try {
       const { name, email, phone } = req.body;
-      const newContact = await contactsService.addContact({
+      const newContact = await contactsService.createContact({
         name,
         email,
         phone,
@@ -69,19 +68,42 @@ export const updateContact = [
 
       if (Object.keys(updatedData).length === 0) {
         return res
-        .status(400)
-        .json({ message: "Body must have at least one field" });
+          .status(400)
+          .json({ message: "Body must have at least one field" });
       }
 
       const updatedContact = await contactsService.updateContact(
         contactId,
         updatedData
       );
-      if (updatedContact) {
-        res.status(200).json(updatedContact);
-      } else {
-        res.status(404).json({ message: "Not found" });
+
+      if (!updatedContact) {
+        throw HttpError(404);
       }
+
+      res.status(200).json(updatedContact);
+    } catch (error) {
+      next(error);
+    }
+  },
+];
+
+export const updateStatusContact = [
+  validateBody(updateStatusContactSchema),
+  async (req, res, next) => {
+    try {
+      const { contactId } = req.params;
+
+      const updateContact = await contactsService.updateStatusContact(
+        contactId,
+        req.body
+      );
+
+      if (!updateContact) {
+        throw HttpError(404);
+      }
+
+      res.status(200).json(updateContact);
     } catch (error) {
       next(error);
     }
