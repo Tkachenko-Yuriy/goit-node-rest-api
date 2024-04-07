@@ -16,7 +16,7 @@ export const getAllContacts = async (req, res, next) => {
   }
 };
 
-export const getOneContact = async (req, res) => {
+export const getOneContact = async (req, res, next) => {
   try {
     const contactId = req.params.id;
     const contact = await contactsService.getContactById(contactId);
@@ -29,7 +29,7 @@ export const getOneContact = async (req, res) => {
   }
 };
 
-export const deleteContact = async (req, res) => {
+export const deleteContact = async (req, res, next) => {
   try {
     const contactId = req.params.id;
     const deletedContact = await contactsService.removeContact(contactId);
@@ -61,7 +61,7 @@ export const createContact = [
 
 export const updateContact = [
   validateBody(updateContactSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const contactId = req.params.id;
       const updatedData = req.body;
