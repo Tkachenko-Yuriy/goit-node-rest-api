@@ -92,10 +92,10 @@ export const updateStatusContact = [
   validateBody(updateStatusContactSchema),
   async (req, res, next) => {
     try {
-      const { contactId } = req.params;
+      const { id } = req.params;
 
       const updateContact = await contactsService.updateStatusContact(
-        contactId,
+        id,
         req.body
       );
 
