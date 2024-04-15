@@ -99,6 +99,12 @@ export const updateContact = async (req, res, next) => {
 export const updateStatusContact = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { _id: owner } = req.user;
+
+    const contactExists = await contactsService.getOneContactByFilter({ owner, _id: id });
+    if (!contactExists) {
+      throw HttpError(404);
+    }
 
     const updateContact = await contactsService.updateStatusContact(
       id,
