@@ -3,8 +3,17 @@ import HttpError from "../helpers/HttpError.js";
 
 export const getAllContacts = async (req, res, next) => {
   try {
-    const contactsList = await contactsService.getAllContacts();
-    res.status(200).json(contactsList);
+    const { page = 1, limit = 5 } = req.query;
+    const skip = (page - 1) * limit;
+    const { _id: owner } = req.user;
+    const contactsList = await contactsService.getAllContacts(
+      { owner },
+      { skip, limit }
+    );
+    const total = await contactsService.countContacts({ owner });
+
+    res.status(200).json({contactsList,
+      total});
   } catch (error) {
     next(error);
   }
@@ -12,8 +21,12 @@ export const getAllContacts = async (req, res, next) => {
 
 export const getOneContact = async (req, res, next) => {
   try {
-    const contactId = req.params.id;
-    const contact = await contactsService.getContactById(contactId);
+    const { id } = req.params;
+    const { _id: owner } = req.user;
+    const contact = await contactsService.getOneContactByFilter({
+      owner,
+      _id: id,
+  });
     if (!contact) {
       throw HttpError(404);
     }
@@ -25,8 +38,12 @@ export const getOneContact = async (req, res, next) => {
 
 export const deleteContact = async (req, res, next) => {
   try {
-    const contactId = req.params.id;
-    const deletedContact = await contactsService.removeContact(contactId);
+    const { id } = req.params;
+    const { _id: owner } = req.user;
+    const deletedContact = await contactsService.removeContact({
+      owner,
+      _id: id,
+  });
     if (!deletedContact) {
       throw HttpError(404);
     }
@@ -38,11 +55,13 @@ export const deleteContact = async (req, res, next) => {
 
 export const createContact = async (req, res) => {
   try {
+    const { _id: owner } = req.user;
     const { name, email, phone } = req.body;
     const newContact = await contactsService.createContact({
       name,
       email,
       phone,
+      owner,
     });
     res.status(201).json(newContact);
   } catch (error) {
@@ -52,7 +71,8 @@ export const createContact = async (req, res) => {
 
 export const updateContact = async (req, res, next) => {
   try {
-    const contactId = req.params.id;
+    const { id } = req.params;
+    const { _id: owner } = req.user;
     const updatedData = req.body;
 
     if (Object.keys(updatedData).length === 0) {
@@ -62,7 +82,7 @@ export const updateContact = async (req, res, next) => {
     }
 
     const updatedContact = await contactsService.updateContact(
-      contactId,
+      { owner, _id: id },
       updatedData
     );
 
@@ -79,6 +99,12 @@ export const updateContact = async (req, res, next) => {
 export const updateStatusContact = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { _id: owner } = req.user;
+
+    const contactExists = await contactsService.getOneContactByFilter({ owner, _id: id });
+    if (!contactExists) {
+      throw HttpError(404);
+    }
 
     const updateContact = await contactsService.updateStatusContact(
       id,
