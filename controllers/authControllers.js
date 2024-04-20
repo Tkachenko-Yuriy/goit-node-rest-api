@@ -3,12 +3,21 @@ import jwt from "jsonwebtoken";
 import HttpError from "../helpers/HttpError.js";
 import authServices from "../services/authServices.js";
 import "dotenv/config.js";
+import path from "path";
+import Jimp from "jimp";
+import gravatar from "gravatar";
+import fs from "fs/promises";
 
 const { SECRET_KEY } = process.env;
+
+const avatarsPath = path.resolve("public", "avatars");
 
 export const signup = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    const avatarURL = gravatar.url(email);
+    
     const user = await authServices.findUser({ email });
 
     if (user) {
@@ -19,6 +28,7 @@ export const signup = async (req, res, next) => {
 
     const newUser = await authServices.signup({
       ...req.body,
+      avatarURL,
       password: hashPassword,
     });
 
@@ -26,6 +36,7 @@ export const signup = async (req, res, next) => {
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
@@ -93,5 +104,29 @@ export const logout = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+export const updateAvatar = async (req, res, next) => {
+  try {
+      const { _id: owner } = req.user;
+
+      const { path: oldPath, filename } = req.file;
+      const image = await Jimp.read(oldPath);
+      image.cover(250, 250);
+      await image.writeAsync(oldPath);
+      const newPath = path.join(avatarsPath, filename);
+      await fs.rename(oldPath, newPath);
+      const newAvatarURL = path.join("avatars", filename);
+
+      const updateResult = await authServices.updateAvatar(owner, {
+          avatarURL: newAvatarURL,
+      });
+
+      res.status(200).json({
+          avatarURL: updateResult.avatarURL,
+      });
+  } catch (error) {
+      next(error);
   }
 };
