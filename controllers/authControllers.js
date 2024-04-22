@@ -111,6 +111,10 @@ export const updateAvatar = async (req, res, next) => {
   try {
       const { _id: owner } = req.user;
 
+      if (!req.file) {
+        throw HttpError(400, "File not provided");
+      }
+
       const { path: oldPath, filename } = req.file;
       const image = await Jimp.read(oldPath);
       image.cover(250, 250);
